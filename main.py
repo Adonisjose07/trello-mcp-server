@@ -52,8 +52,8 @@ def start_claude_server():
         raise
 
 
-def start_sse_server():
-    """Start the MCP server in SSE mode using uvicorn"""
+def start_mcp_server():
+    """Start the MCP server in Streamable HTTP mode using uvicorn"""
     try:
         # Verify environment variables
         if not os.getenv("TRELLO_API_KEY") or not os.getenv("TRELLO_TOKEN"):
@@ -64,10 +64,8 @@ def start_sse_server():
         host = os.getenv("MCP_SERVER_HOST", "0.0.0.0")
         port = int(os.getenv("MCP_SERVER_PORT", "8000"))
 
-        mcp_app = mcp.sse_app()
+        mcp_app = mcp.streamable_http_app()
 
-        # Mount mcp_app at /sse to support /sse/messages (which becomes /messages inside the app)
-        # Mount mcp_app at / to support /sse (which matches the internal /sse route)
         from starlette.routing import Mount
         from starlette.middleware import Middleware
         from starlette.middleware.cors import CORSMiddleware
@@ -85,11 +83,9 @@ def start_sse_server():
                 async def send_wrapper(message):
                     if message["type"] == "http.response.start":
                         headers = getattr(message, "get", lambda x: [])("headers") or []
-                        # Convert headers to mutable list if tuple/immutable
                         if isinstance(headers, tuple):
                            headers = list(headers)
                         
-                        # Add headers. Note: Headers must be bytes.
                         headers.append((b"x-accel-buffering", b"no"))
                         headers.append((b"cache-control", b"no-cache"))
                         headers.append((b"connection", b"keep-alive"))
@@ -123,11 +119,11 @@ def start_sse_server():
         ], middleware=middleware)
 
         logger.info(
-            f"Starting Trello MCP Server in SSE mode on http://{host}:{port}..."
+            f"Starting Trello MCP Server in Streamable HTTP mode on http://{host}:{port}..."
         )
         uvicorn.run(app, host=host, port=port)
     except Exception as e:
-        logger.error(f"Error starting SSE server: {str(e)}")
+        logger.error(f"Error starting MCP server: {str(e)}")
         raise
 
 
@@ -140,8 +136,8 @@ if __name__ == "__main__":
             # Run in Claude app mode
             start_claude_server()
         else:
-            # Run in SSE mode
-            start_sse_server()
+            # Run in Streamable HTTP mode (formerly SSE)
+            start_mcp_server()
     except KeyboardInterrupt:
         logger.info("Shutting down server...")
     except Exception as e:
