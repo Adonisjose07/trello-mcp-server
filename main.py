@@ -28,7 +28,7 @@ from mcp.server.fastmcp.server import TransportSecuritySettings
 # Initialize MCP server with security settings to allow VPS hosts
 mcp = FastMCP(
     "Trello MCP Server",
-    security=TransportSecuritySettings(allowed_hosts=["mcp.se7entech.net"])
+    transport_security=TransportSecuritySettings(allowed_hosts=["mcp.se7entech.net"])
 )
 
 # Register tools
