@@ -4,7 +4,7 @@ Service for managing Trello boards in MCP server.
 
 from typing import List
 
-from server.models import TrelloBoard, TrelloLabel
+from server.models import TrelloBoard, TrelloLabel, TrelloMember
 from server.utils.trello_api import TrelloClient
 
 
@@ -63,3 +63,17 @@ class BoardService:
         """
         response = await self.client.POST(f"/boards/{board_id}/labels", data=kwargs)
         return TrelloLabel(**response)
+
+    async def get_board_members(self, board_id: str) -> List[TrelloMember]:
+        """Retrieves all members for a specific board.
+
+        Args:
+            board_id (str): The ID of the board whose members to retrieve.
+
+        Returns:
+            List[TrelloMember]: A list of member objects.
+        """
+        response = await self.client.GET(f"/boards/{board_id}/members")
+        # Note: Trello API usually returns basic fields. 'email' might be missing dependent on permissions.
+        # We pass the data to the model, allowing optional fields to be None.
+        return [TrelloMember(**member) for member in response]
