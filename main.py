@@ -76,10 +76,10 @@ def start_sse_server():
         class NoBufferingMiddleware(BaseHTTPMiddleware):
             async def dispatch(self, request, call_next):
                 response = await call_next(request)
-                if request.url.path in ["/", "/sse"]:
-                    response.headers["X-Accel-Buffering"] = "no"
-                    response.headers["Cache-Control"] = "no-cache"
-                    response.headers["Connection"] = "keep-alive"
+                # Apply anti-buffering headers to ALL responses to ensure SSE works through proxies
+                response.headers["X-Accel-Buffering"] = "no"
+                response.headers["Cache-Control"] = "no-cache"
+                response.headers["Connection"] = "keep-alive"
                 return response
 
         middleware = [
