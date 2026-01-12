@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from starlette.applications import Starlette
 from starlette.routing import Mount
+from starlette.requests import Request
+from starlette.responses import StreamingResponse, JSONResponse
+import httpx
+import time
 
 from server.tools.tools import register_tools
 
@@ -55,12 +59,15 @@ def start_sse_server():
         host = os.getenv("MCP_SERVER_HOST", "0.0.0.0")
         port = int(os.getenv("MCP_SERVER_PORT", "8000"))
 
-        # Create Starlette app with MCP server mounted
-        app = Starlette(
-            routes=[
-                Mount("/", app=mcp.sse_app()),
-            ]
-        )
+        mcp_app = mcp.sse_app()
+
+        # Mount mcp_app at /sse to support /sse/messages (which becomes /messages inside the app)
+        # Mount mcp_app at / to support /sse (which matches the internal /sse route)
+        from starlette.routing import Mount
+        app = Starlette(routes=[
+            Mount("/sse", app=mcp_app),
+            Mount("/", app=mcp_app),
+        ])
 
         logger.info(
             f"Starting Trello MCP Server in SSE mode on http://{host}:{port}..."

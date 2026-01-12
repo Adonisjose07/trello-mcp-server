@@ -183,13 +183,26 @@ async def connect_to_mcp_server():
                     if "session_id=" in data and not session_id:
                         session_id = data.split("session_id=")[1]
                         
-                        # Send a message using the session ID
+                        # Send a JSON-RPC `completion/complete` request using the
+                        # session ID. The MCP server expects structured RPC
+                        # requests (see logs for required method names).
                         message_url = f"http://localhost:8000/messages/?session_id={session_id}"
                         message = {
-                            "role": "user",
-                            "content": {
-                                "type": "text",
-                                "text": "Show me my Trello boards"
+                            "jsonrpc": "2.0",
+                            "method": "completion/complete",
+                            "id": 1,
+                            "params": {
+                                "ref": "local",
+                                "argument": {
+                                    "messages": [
+                                        {
+                                            "role": "user",
+                                            "content": [
+                                                {"type": "text", "text": "Show me my Trello boards"}
+                                            ]
+                                        }
+                                    ]
+                                }
                             }
                         }
                         await client.post(message_url, json=message)

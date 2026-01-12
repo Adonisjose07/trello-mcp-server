@@ -77,3 +77,23 @@ class CardService:
             Dict[str, Any]: The response from the delete operation.
         """
         return await self.client.DELETE(f"/cards/{card_id}")
+
+    async def get_comments(self, card_id: str) -> List[Dict[str, Any]]:
+        """Retrieves comments for a card."""
+        response = await self.client.GET(f"/cards/{card_id}/actions", params={"filter": "commentCard"})
+        return response
+
+    async def add_comment(self, card_id: str, text: str) -> Dict[str, Any]:
+        """Adds a comment to a card."""
+        response = await self.client.POST(f"/cards/{card_id}/actions/comments", data={"text": text})
+        return response
+
+    async def add_member(self, card_id: str, member_id: str) -> List[Dict[str, Any]]:
+        """Adds a member to a card."""
+        response = await self.client.POST(f"/cards/{card_id}/idMembers", data={"value": member_id})
+        return response
+
+    async def remove_member(self, card_id: str, member_id: str) -> List[Dict[str, Any]]:
+        """Removes a member from a card."""
+        response = await self.client.DELETE(f"/cards/{card_id}/idMembers/{member_id}")
+        return response

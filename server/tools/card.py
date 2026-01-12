@@ -3,7 +3,7 @@ This module contains tools for managing Trello cards.
 """
 
 import logging
-from typing import List
+from typing import List, Dict, Any
 
 from mcp.server.fastmcp import Context
 
@@ -125,6 +125,91 @@ async def delete_card(ctx: Context, card_id: str) -> dict:
         return result
     except Exception as e:
         error_msg = f"Failed to delete card: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+async def get_card_comments(ctx: Context, card_id: str) -> List[Dict[str, Any]]:
+    """Retrieves all comments for a specific card.
+
+    Args:
+        card_id (str): The ID of the card.
+
+    Returns:
+        List[Dict]: A list of comment actions.
+    """
+    try:
+        logger.info(f"Getting comments for card: {card_id}")
+        result = await service.get_comments(card_id)
+        logger.info(f"Successfully retrieved comments for card: {card_id}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to get card comments: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+
+async def add_comment_to_card(ctx: Context, card_id: str, text: str) -> Dict[str, Any]:
+    """Adds a new comment to a card.
+
+    Args:
+        card_id (str): The ID of the card.
+        text (str): The comment text.
+
+    Returns:
+        Dict: The created comment action.
+    """
+    try:
+        logger.info(f"Adding comment to card: {card_id}")
+        result = await service.add_comment(card_id, text)
+        logger.info(f"Successfully added comment to card: {card_id}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to add comment: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+async def add_member_to_card(ctx: Context, card_id: str, member_id: str) -> List[Dict[str, Any]]:
+    """Adds a member to a card.
+
+    Args:
+        card_id (str): The ID of the card.
+        member_id (str): The ID of the member to add.
+
+    Returns:
+        List[Dict]: The updated list of members on the card.
+    """
+    try:
+        logger.info(f"Adding member {member_id} to card: {card_id}")
+        result = await service.add_member(card_id, member_id)
+        logger.info(f"Successfully added member to card: {card_id}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to add member: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+
+async def remove_member_from_card(ctx: Context, card_id: str, member_id: str) -> List[Dict[str, Any]]:
+    """Removes a member from a card.
+
+    Args:
+        card_id (str): The ID of the card.
+        member_id (str): The ID of the member to remove.
+
+    Returns:
+        List[Dict]: The updated list of members on the card.
+    """
+    try:
+        logger.info(f"Removing member {member_id} from card: {card_id}")
+        result = await service.remove_member(card_id, member_id)
+        logger.info(f"Successfully removed member from card: {card_id}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to remove member: {str(e)}"
         logger.error(error_msg)
         await ctx.error(error_msg)
         raise
