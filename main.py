@@ -112,7 +112,13 @@ def start_sse_server():
              Middleware(NoBufferingMiddleware)
         ]
 
+        from starlette.responses import PlainTextResponse
+        async def health_check(request):
+            return PlainTextResponse(f"OK. Path: {request.url.path}")
+
+        from starlette.routing import Route
         app = Starlette(routes=[
+            Route("/health", endpoint=health_check),
             Mount("/", app=mcp_app),
         ], middleware=middleware)
 
