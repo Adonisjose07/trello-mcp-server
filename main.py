@@ -80,6 +80,8 @@ def start_sse_server():
                 response.headers["X-Accel-Buffering"] = "no"
                 response.headers["Cache-Control"] = "no-cache"
                 response.headers["Connection"] = "keep-alive"
+                response.headers["Content-Encoding"] = "identity"
+                response.headers["X-Content-Type-Options"] = "nosniff"
                 return response
 
         middleware = [
