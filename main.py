@@ -69,10 +69,22 @@ def start_sse_server():
         # Mount mcp_app at /sse to support /sse/messages (which becomes /messages inside the app)
         # Mount mcp_app at / to support /sse (which matches the internal /sse route)
         from starlette.routing import Mount
+        from starlette.middleware import Middleware
+        from starlette.middleware.cors import CORSMiddleware
+
+        middleware = [
+             Middleware(
+                 CORSMiddleware,
+                 allow_origins=["*"],
+                 allow_credentials=True,
+                 allow_methods=["*"],
+                 allow_headers=["*"],
+             )
+        ]
+
         app = Starlette(routes=[
-            Mount("/sse", app=mcp_app),
             Mount("/", app=mcp_app),
-        ])
+        ], middleware=middleware)
 
         logger.info(
             f"Starting Trello MCP Server in SSE mode on http://{host}:{port}..."
