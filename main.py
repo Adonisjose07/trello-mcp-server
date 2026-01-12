@@ -71,6 +71,16 @@ def start_sse_server():
         from starlette.routing import Mount
         from starlette.middleware import Middleware
         from starlette.middleware.cors import CORSMiddleware
+        from starlette.middleware.base import BaseHTTPMiddleware
+
+        class NoBufferingMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request, call_next):
+                response = await call_next(request)
+                if request.url.path in ["/", "/sse"]:
+                    response.headers["X-Accel-Buffering"] = "no"
+                    response.headers["Cache-Control"] = "no-cache"
+                    response.headers["Connection"] = "keep-alive"
+                return response
 
         middleware = [
              Middleware(
@@ -79,7 +89,8 @@ def start_sse_server():
                  allow_credentials=True,
                  allow_methods=["*"],
                  allow_headers=["*"],
-             )
+             ),
+             Middleware(NoBufferingMiddleware)
         ]
 
         app = Starlette(routes=[
