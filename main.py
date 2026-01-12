@@ -73,16 +73,33 @@ def start_sse_server():
         from starlette.middleware.cors import CORSMiddleware
         from starlette.middleware.base import BaseHTTPMiddleware
 
-        class NoBufferingMiddleware(BaseHTTPMiddleware):
-            async def dispatch(self, request, call_next):
-                response = await call_next(request)
-                # Apply anti-buffering headers to ALL responses to ensure SSE works through proxies
-                response.headers["X-Accel-Buffering"] = "no"
-                response.headers["Cache-Control"] = "no-cache"
-                response.headers["Connection"] = "keep-alive"
-                response.headers["Content-Encoding"] = "identity"
-                response.headers["X-Content-Type-Options"] = "nosniff"
-                return response
+        class NoBufferingMiddleware:
+            def __init__(self, app):
+                self.app = app
+
+            async def __call__(self, scope, receive, send):
+                if scope["type"] != "http":
+                    await self.app(scope, receive, send)
+                    return
+
+                async def send_wrapper(message):
+                    if message["type"] == "http.response.start":
+                        headers = getattr(message, "get", lambda x: [])("headers") or []
+                        # Convert headers to mutable list if tuple/immutable
+                        if isinstance(headers, tuple):
+                           headers = list(headers)
+                        
+                        # Add headers. Note: Headers must be bytes.
+                        headers.append((b"x-accel-buffering", b"no"))
+                        headers.append((b"cache-control", b"no-cache"))
+                        headers.append((b"connection", b"keep-alive"))
+                        headers.append((b"content-encoding", b"identity"))
+                        headers.append((b"x-content-type-options", b"nosniff"))
+                        
+                        message["headers"] = headers
+                    await send(message)
+
+                await self.app(scope, receive, send_wrapper)
 
         middleware = [
              Middleware(
