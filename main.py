@@ -23,8 +23,13 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 
-# Initialize MCP server
-mcp = FastMCP("Trello MCP Server")
+from mcp.server.fastmcp.server import TransportSecuritySettings
+
+# Initialize MCP server with security settings to allow VPS hosts
+mcp = FastMCP(
+    "Trello MCP Server",
+    security=TransportSecuritySettings(allowed_hosts=["*"])
+)
 
 # Register tools
 register_tools(mcp)
