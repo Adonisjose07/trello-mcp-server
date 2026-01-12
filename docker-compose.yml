@@ -13,5 +13,7 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
-      - USE_CLAUDE_APP=false  # Use SSE mode by default in Docker
-    restart: unless-stopped 
+      - USE_CLAUDE_APP=false # Use SSE mode by default in Docker
+    restart: unless-stopped
+    networks:
+      - dokploy-network
