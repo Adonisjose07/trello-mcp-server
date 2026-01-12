@@ -64,12 +64,18 @@ def start_mcp_server():
         host = os.getenv("MCP_SERVER_HOST", "0.0.0.0")
         port = int(os.getenv("MCP_SERVER_PORT", "8000"))
 
-        mcp_app = mcp.streamable_http_app()
+        # Initialize session manager via side-effect (creates mcp._session_manager)
+        _ = mcp.streamable_http_app()
+        
+        # Import the ASGI app class
+        from mcp.server.fastmcp.server import StreamableHTTPASGIApp
 
-        from starlette.routing import Mount
+        from starlette.routing import Mount, Route
         from starlette.middleware import Middleware
         from starlette.middleware.cors import CORSMiddleware
         from starlette.middleware.base import BaseHTTPMiddleware
+        from contextlib import asynccontextmanager
+        from starlette.responses import PlainTextResponse
 
         class NoBufferingMiddleware:
             def __init__(self, app):
@@ -108,15 +114,27 @@ def start_mcp_server():
              Middleware(NoBufferingMiddleware)
         ]
 
-        from starlette.responses import PlainTextResponse
         async def health_check(request):
             return PlainTextResponse(f"OK. Path: {request.url.path}")
 
-        from starlette.routing import Route
+        @asynccontextmanager
+        async def lifespan(app):
+            # Verify if session manager is initialized and run it
+            if hasattr(mcp, "_session_manager") and mcp._session_manager:
+                 async with mcp._session_manager.run():
+                     yield
+            else:
+                 yield
+        
+        # Manually create the ASGI app using the initialized session manager
+        # This gives us control over the route methods
+        stream_handler = StreamableHTTPASGIApp(mcp._session_manager)
+
         app = Starlette(routes=[
             Route("/health", endpoint=health_check),
-            Mount("/", app=mcp_app),
-        ], middleware=middleware)
+            # Explicitly allow POST/GET for /mcp
+            Route("/mcp", endpoint=stream_handler, methods=["POST", "GET"]),
+        ], middleware=middleware, lifespan=lifespan)
 
         logger.info(
             f"Starting Trello MCP Server in Streamable HTTP mode on http://{host}:{port}..."
