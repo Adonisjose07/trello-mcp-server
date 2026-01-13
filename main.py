@@ -92,16 +92,71 @@ def start_mcp_server():
                         if isinstance(headers, tuple):
                            headers = list(headers)
                         
-                        headers.append((b"x-accel-buffering", b"no"))
-                        headers.append((b"cache-control", b"no-cache"))
-                        headers.append((b"connection", b"keep-alive"))
-                        headers.append((b"content-encoding", b"identity"))
-                        headers.append((b"x-content-type-options", b"nosniff"))
+                        # Check definition of headers
+                        is_sse = False
+                        for name, value in headers:
+                            if name.lower() == b"content-type" and b"text/event-stream" in value:
+                                is_sse = True
+                                break
                         
-                        message["headers"] = headers
+                        if is_sse:
+                            headers.append((b"x-accel-buffering", b"no"))
+                            headers.append((b"cache-control", b"no-cache"))
+                            headers.append((b"connection", b"keep-alive"))
+                            headers.append((b"content-encoding", b"identity"))
+                            headers.append((b"x-content-type-options", b"nosniff"))
+                            message["headers"] = headers
+                            
                     await send(message)
 
                 await self.app(scope, receive, send_wrapper)
+
+        from starlette.responses import JSONResponse
+
+        class APIKeyMiddleware:
+            def __init__(self, app):
+                self.app = app
+                # Support multiple API keys (comma separated)
+                api_keys_str = os.getenv("MCP_API_KEY", "")
+                self.api_keys = [k.strip() for k in api_keys_str.split(",") if k.strip()]
+                logger.info(f"DEBUG: API Key(s) configured: {len(self.api_keys)}")
+
+            async def __call__(self, scope, receive, send):
+                if scope["type"] != "http":
+                    await self.app(scope, receive, send)
+                    return
+
+                # Skip auth for health check and OPTIONS (CORS preflight)
+                if scope["path"] == "/health" or scope["method"] == "OPTIONS":
+                    await self.app(scope, receive, send)
+                    return
+
+                if not self.api_keys:
+                    logger.info("DEBUG: No API Key, allowing")
+                    await self.app(scope, receive, send)
+                    return
+
+                headers = dict(scope["headers"])
+                auth_header = headers.get(b"authorization", b"").decode("latin-1")
+                # Do not log full header for security details, just length or prefix
+                logger.info(f"DEBUG: Auth Check. Header present: {bool(auth_header)}")
+                
+                token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
+                
+                if output := (not token or token not in self.api_keys): # Assignment expression just for logic flow clarity if needed, actually simple check is proper
+                     pass
+
+                if not token or token not in self.api_keys:
+                    logger.warning("DEBUG: Auth Failed. Returning 401.")
+                    response = JSONResponse(
+                        {"error": "Unauthorized", "message": "Invalid or missing API Key"}, 
+                        status_code=401
+                    )
+                    await response(scope, receive, send)
+                    return
+                
+                logger.info("DEBUG: Auth Success")
+                await self.app(scope, receive, send)
 
         middleware = [
              Middleware(
@@ -111,7 +166,8 @@ def start_mcp_server():
                  allow_methods=["*"],
                  allow_headers=["*"],
              ),
-             Middleware(NoBufferingMiddleware)
+             Middleware(NoBufferingMiddleware),
+             Middleware(APIKeyMiddleware)
         ]
 
         async def health_check(request):
