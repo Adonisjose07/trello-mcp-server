@@ -202,7 +202,10 @@ def start_mcp_server():
 
         app = Starlette(routes=[
             Route("/health", endpoint=health_check),
-            # Mount the MCP handler to support sub-paths and robust protocol initialization
+            # Handle /mcp without trailing slash explicitly to avoid redirects
+            # that cause some clients to lose the Authorization header.
+            Route("/mcp", endpoint=stream_handler, methods=["GET", "POST", "DELETE"]),
+            # Mount handles subpaths and /mcp/
             Mount("/mcp", app=stream_handler),
         ], middleware=middleware, lifespan=lifespan)
 
