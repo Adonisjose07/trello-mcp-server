@@ -97,3 +97,15 @@ class CardService:
         """Removes a member from a card."""
         response = await self.client.DELETE(f"/cards/{card_id}/idMembers/{member_id}")
         return response
+
+    async def copy_card(self, idCardSource: str, idList: str, **kwargs) -> TrelloCard:
+        """Clones an existing card.
+        
+        Args:
+            idCardSource (str): The ID of the card to copy.
+            idList (str): The ID of the list to place the new card in.
+            **kwargs: Additional attributes to override in the new card.
+        """
+        data = {"idCardSource": idCardSource, "idList": idList, **kwargs}
+        response = await self.client.POST("/cards", data=data)
+        return TrelloCard(**response)

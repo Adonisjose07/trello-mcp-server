@@ -9,6 +9,8 @@ from mcp.server.fastmcp import Context
 
 from server.models import TrelloBoard, TrelloLabel, TrelloMember, TrelloWorkspace
 from server.dtos.create_label import CreateLabelPayload
+from server.dtos.create_board import CreateBoardPayload
+from server.dtos.update_board import UpdateBoardPayload
 from server.services.board import BoardService
 from server.trello import client
 from server.utils.auth import require_write_access
@@ -165,6 +167,88 @@ async def get_board_members(ctx: Context, board_id: str) -> List[TrelloMember]:
         return result
     except Exception as e:
         error_msg = f"Failed to get board members: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+async def get_me(ctx: Context) -> TrelloMember:
+    """Retrieves the authenticated user's profile.
+    
+    Returns:
+        TrelloMember: Your Trello profile information.
+    """
+    try:
+        logger.info("Getting current user profile")
+        result = await service.get_me()
+        logger.info(f"Successfully retrieved profile for: {result.username}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to get user profile: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+async def get_board_actions(ctx: Context, board_id: str, filter: str = "all", limit: int = 50) -> List[dict]:
+    """Retrieves recent actions/activity for a Trello board.
+
+    Args:
+        board_id (str): The ID of the board.
+        filter (str, optional): Action types to return. Defaults to 'all'.
+        limit (int, optional): Maximum number of actions. Defaults to 50.
+
+    Returns:
+        List[dict]: A list of recent activities on the board.
+    """
+    try:
+        logger.info(f"Getting actions for board: {board_id}")
+        result = await service.get_board_actions(board_id, filter, limit)
+        logger.info(f"Successfully retrieved {len(result)} actions for board: {board_id}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to get board actions: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+@require_write_access
+async def create_board(ctx: Context, payload: CreateBoardPayload) -> TrelloBoard:
+    """Creates a new Trello board.
+
+    Args:
+        payload (CreateBoardPayload): Details for the new board.
+
+    Returns:
+        TrelloBoard: The newly created board object.
+    """
+    try:
+        logger.info(f"Creating board: {payload.name}")
+        result = await service.create_board(**payload.model_dump(exclude_unset=True))
+        logger.info(f"Successfully created board: {result.id}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to create board: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+@require_write_access
+async def update_board(ctx: Context, board_id: str, payload: UpdateBoardPayload) -> TrelloBoard:
+    """Updates an existing Trello board.
+
+    Args:
+        board_id (str): The ID of the board to update.
+        payload (UpdateBoardPayload): Attributes to update.
+
+    Returns:
+        TrelloBoard: The updated board object.
+    """
+    try:
+        logger.info(f"Updating board: {board_id}")
+        result = await service.update_board(board_id, **payload.model_dump(exclude_unset=True))
+        logger.info(f"Successfully updated board: {board_id}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to update board: {str(e)}"
         logger.error(error_msg)
         await ctx.error(error_msg)
         raise

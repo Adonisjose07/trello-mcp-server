@@ -15,6 +15,10 @@ def register_tools(mcp):
     mcp.add_tool(board.get_board_members)
     mcp.add_tool(board.get_workspaces)
     mcp.add_tool(board.get_workspace_boards)
+    mcp.add_tool(board.get_me)
+    mcp.add_tool(board.get_board_actions)
+    mcp.add_tool(board.create_board)
+    mcp.add_tool(board.update_board)
 
     # List Tools
     mcp.add_tool(list.get_list)
@@ -35,6 +39,7 @@ def register_tools(mcp):
     # New Member Tools
     mcp.add_tool(card.add_member_to_card)
     mcp.add_tool(card.remove_member_from_card)
+    mcp.add_tool(card.copy_card)
 
     # Attachment Tools
     mcp.add_tool(attachment.get_card_attachments)

@@ -73,15 +73,44 @@ class BoardService:
         return TrelloLabel(**response)
 
     async def get_board_members(self, board_id: str) -> List[TrelloMember]:
-        """Retrieves all members for a specific board.
-
-        Args:
-            board_id (str): The ID of the board whose members to retrieve.
-
-        Returns:
-            List[TrelloMember]: A list of member objects.
-        """
+        """Retrieves all members for a specific board."""
         response = await self.client.GET(f"/boards/{board_id}/members")
-        # Note: Trello API usually returns basic fields. 'email' might be missing dependent on permissions.
-        # We pass the data to the model, allowing optional fields to be None.
         return [TrelloMember(**member) for member in response]
+
+    async def create_board(self, name: str, **kwargs) -> TrelloBoard:
+        """Creates a new board.
+        
+        Args:
+            name (str): The name of the board.
+            **kwargs: Optional Trello board parameters (desc, idOrganization, defaultLists, etc.)
+        """
+        data = {"name": name, **kwargs}
+        response = await self.client.POST("/boards", data=data)
+        return TrelloBoard(**response)
+
+    async def update_board(self, board_id: str, **kwargs) -> TrelloBoard:
+        """Updates an existing board's attributes.
+        
+        Args:
+            board_id (str): The ID of the board to update.
+            **kwargs: Attributes to update (name, desc, closed, etc.)
+        """
+        response = await self.client.PUT(f"/boards/{board_id}", data=kwargs)
+        return TrelloBoard(**response)
+
+    async def get_me(self) -> TrelloMember:
+        """Retrieves the authenticated user's profile."""
+        response = await self.client.GET("/members/me")
+        return TrelloMember(**response)
+
+    async def get_board_actions(self, board_id: str, filter: str = "all", limit: int = 50) -> List[dict]:
+        """Retrieves recent actions/activity for a board.
+        
+        Args:
+            board_id (str): The ID of the board.
+            filter (str): Action types to return.
+            limit (int): Maximum number of actions.
+        """
+        params = {"filter": filter, "limit": limit}
+        response = await self.client.GET(f"/boards/{board_id}/actions", params=params)
+        return response

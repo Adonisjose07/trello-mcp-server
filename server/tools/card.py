@@ -12,6 +12,7 @@ from server.services.card import CardService
 from server.trello import client
 from server.dtos.update_card import UpdateCardPayload
 from server.dtos.create_card import CreateCardPayload
+from server.dtos.copy_card import CopyCardPayload
 from server.utils.auth import require_write_access
 
 logger = logging.getLogger(__name__)
@@ -217,6 +218,28 @@ async def remove_member_from_card(ctx: Context, card_id: str, member_id: str) ->
         return result
     except Exception as e:
         error_msg = f"Failed to remove member: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+
+@require_write_access
+async def copy_card(ctx: Context, payload: CopyCardPayload) -> TrelloCard:
+    """Clones an existing Trello card to a new list.
+
+    Args:
+        payload (CopyCardPayload): Details for cloning the card.
+
+    Returns:
+        TrelloCard: The newly created (cloned) card object.
+    """
+    try:
+        logger.info(f"Copying card {payload.idCardSource} to list {payload.idList}")
+        result = await service.copy_card(**payload.model_dump(exclude_unset=True))
+        logger.info(f"Successfully copied card to: {result.id}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to copy card: {str(e)}"
         logger.error(error_msg)
         await ctx.error(error_msg)
         raise
