@@ -7,6 +7,7 @@ from typing import Dict, List
 
 from server.services.checklist import ChecklistService
 from server.trello import client
+from server.utils.auth import require_write_access
 
 logger = logging.getLogger(__name__)
 service = ChecklistService(client)
@@ -38,6 +39,7 @@ async def get_card_checklists(card_id: str) -> List[Dict]:
     return await service.get_card_checklists(card_id)
 
 
+@require_write_access
 async def create_checklist(card_id: str, name: str, pos: str | None = None) -> Dict:
     """
     Create a new checklist on a card.
@@ -53,6 +55,7 @@ async def create_checklist(card_id: str, name: str, pos: str | None = None) -> D
     return await service.create_checklist(card_id, name, pos)
 
 
+@require_write_access
 async def update_checklist(
     checklist_id: str, name: str | None = None, pos: str | None = None
 ) -> Dict:
@@ -70,6 +73,7 @@ async def update_checklist(
     return await service.update_checklist(checklist_id, name, pos)
 
 
+@require_write_access
 async def delete_checklist(checklist_id: str) -> Dict:
     """
     Delete a checklist.
@@ -83,6 +87,7 @@ async def delete_checklist(checklist_id: str) -> Dict:
     return await service.delete_checklist(checklist_id)
 
 
+@require_write_access
 async def add_checkitem(
     checklist_id: str, name: str, checked: bool = False, pos: str | None = None
 ) -> Dict:
@@ -101,6 +106,7 @@ async def add_checkitem(
     return await service.add_checkitem(checklist_id, name, checked, pos)
 
 
+@require_write_access
 async def update_checkitem(
     checklist_id: str,
     checkitem_id: str,
@@ -126,6 +132,7 @@ async def update_checkitem(
     )
 
 
+@require_write_access
 async def delete_checkitem(checklist_id: str, checkitem_id: str) -> Dict:
     """
     Delete a checkitem from a checklist.

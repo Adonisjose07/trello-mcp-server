@@ -5,6 +5,7 @@ from mcp.server.fastmcp import Context
 
 from server.services.attachment import AttachmentService
 from server.trello import client
+from server.utils.auth import require_write_access
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ async def get_card_attachments(ctx: Context, card_id: str) -> List[Dict[str, Any
         await ctx.error(error_msg)
         raise
 
+@require_write_access
 async def add_attachment_to_card(ctx: Context, card_id: str, url: str, name: Optional[str] = None) -> Dict[str, Any]:
     """Adds an attachment to a card using a URL.
 
@@ -50,6 +52,7 @@ async def add_attachment_to_card(ctx: Context, card_id: str, url: str, name: Opt
         await ctx.error(error_msg)
         raise
 
+@require_write_access
 async def delete_attachment_from_card(ctx: Context, card_id: str, attachment_id: str) -> bool:
     """Deletes an attachment from a card.
 

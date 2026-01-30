@@ -5,6 +5,7 @@ from mcp.server.fastmcp import Context
 
 from server.services.custom_field import CustomFieldService
 from server.trello import client
+from server.utils.auth import require_write_access
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,7 @@ async def get_card_custom_field_items(ctx: Context, card_id: str) -> List[Dict[s
         await ctx.error(error_msg)
         raise
 
+@require_write_access
 async def update_card_custom_field_value(
     ctx: Context, 
     card_id: str, 

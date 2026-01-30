@@ -11,6 +11,7 @@ from server.models import TrelloBoard, TrelloLabel, TrelloMember
 from server.dtos.create_label import CreateLabelPayload
 from server.services.board import BoardService
 from server.trello import client
+from server.utils.auth import require_write_access
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,7 @@ async def get_board_labels(ctx: Context, board_id: str) -> List[TrelloLabel]:
         raise
 
 
+@require_write_access
 async def create_board_label(ctx: Context, board_id: str, payload: CreateLabelPayload) -> TrelloLabel:
     """Create label for a specific board.
 

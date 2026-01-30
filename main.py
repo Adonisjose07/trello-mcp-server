@@ -111,15 +111,26 @@ def start_mcp_server():
 
                 await self.app(scope, receive, send_wrapper)
 
-        from starlette.responses import JSONResponse
+        from server.utils.auth import api_key_role, Role
 
         class APIKeyMiddleware:
             def __init__(self, app):
                 self.app = app
-                # Support multiple API keys (comma separated)
-                api_keys_str = os.getenv("MCP_API_KEY", "")
-                self.api_keys = [k.strip() for k in api_keys_str.split(",") if k.strip()]
-                logger.info(f"DEBUG: API Key(s) configured: {len(self.api_keys)}")
+                # Support multiple API keys for different roles
+                ro_keys_str = os.getenv("MCP_API_KEY_READ_ONLY", "")
+                rw_keys_str = os.getenv("MCP_API_KEY_READ_WRITE", "")
+                
+                # Falling back to MCP_API_KEY as READ_WRITE for backward compatibility if configured
+                legacy_keys_str = os.getenv("MCP_API_KEY", "") if not (ro_keys_str or rw_keys_str) else ""
+                
+                self.ro_keys = [k.strip() for k in ro_keys_str.split(",") if k.strip()]
+                self.rw_keys = [k.strip() for k in rw_keys_str.split(",") if k.strip()]
+                
+                if legacy_keys_str:
+                    logger.info("Using legacy MCP_API_KEY as READ_WRITE")
+                    self.rw_keys.extend([k.strip() for k in legacy_keys_str.split(",") if k.strip()])
+
+                logger.info(f"DEBUG: RBAC Configured - RO keys: {len(self.ro_keys)}, RW keys: {len(self.rw_keys)}")
 
             async def __call__(self, scope, receive, send):
                 if scope["type"] != "http":
@@ -131,23 +142,25 @@ def start_mcp_server():
                     await self.app(scope, receive, send)
                     return
 
-                if not self.api_keys:
-                    logger.info("DEBUG: No API Key, allowing")
+                if not self.ro_keys and not self.rw_keys:
+                    logger.info("DEBUG: No API Keys configured, allowing as READ_WRITE by default")
+                    api_key_role.set(Role.READ_WRITE)
                     await self.app(scope, receive, send)
                     return
 
                 headers = dict(scope["headers"])
                 auth_header = headers.get(b"authorization", b"").decode("latin-1")
-                # Do not log full header for security details, just length or prefix
-                logger.info(f"DEBUG: Auth Check. Header present: {bool(auth_header)}")
-                
                 token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
                 
-                if output := (not token or token not in self.api_keys): # Assignment expression just for logic flow clarity if needed, actually simple check is proper
-                     pass
+                role = None
+                if token:
+                    if token in self.rw_keys:
+                        role = Role.READ_WRITE
+                    elif token in self.ro_keys:
+                        role = Role.READ_ONLY
 
-                if not token or token not in self.api_keys:
-                    logger.warning("DEBUG: Auth Failed. Returning 401.")
+                if role is None:
+                    logger.warning(f"DEBUG: Auth Failed for token prefix: {token[:4]}... Returning 401.")
                     response = JSONResponse(
                         {"error": "Unauthorized", "message": "Invalid or missing API Key"}, 
                         status_code=401
@@ -155,7 +168,8 @@ def start_mcp_server():
                     await response(scope, receive, send)
                     return
                 
-                logger.info("DEBUG: Auth Success")
+                logger.info(f"DEBUG: Auth Success. Role: {role.value}")
+                api_key_role.set(role)
                 await self.app(scope, receive, send)
 
         middleware = [

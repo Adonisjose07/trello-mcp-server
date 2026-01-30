@@ -10,6 +10,7 @@ from mcp.server.fastmcp import Context
 from server.models import TrelloList
 from server.services.list import ListService
 from server.trello import client
+from server.utils.auth import require_write_access
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ async def get_lists(ctx: Context, board_id: str) -> List[TrelloList]:
         raise
 
 
+@require_write_access
 async def create_list(
     ctx: Context, board_id: str, name: str, pos: str = "bottom"
 ) -> TrelloList:
@@ -84,6 +86,7 @@ async def create_list(
         raise
 
 
+@require_write_access
 async def update_list(ctx: Context, list_id: str, name: str) -> TrelloList:
     """Updates the name of a list.
 
@@ -106,6 +109,7 @@ async def update_list(ctx: Context, list_id: str, name: str) -> TrelloList:
         raise
 
 
+@require_write_access
 async def delete_list(ctx: Context, list_id: str) -> TrelloList:
     """Archives a list.
 

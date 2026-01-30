@@ -12,6 +12,7 @@ from server.services.card import CardService
 from server.trello import client
 from server.dtos.update_card import UpdateCardPayload
 from server.dtos.create_card import CreateCardPayload
+from server.utils.auth import require_write_access
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ async def get_cards(ctx: Context, list_id: str) -> List[TrelloCard]:
         raise
 
 
+@require_write_access
 async def create_card(ctx: Context, payload: CreateCardPayload) -> TrelloCard:
     """Creates a new card in a given list.
 
@@ -83,6 +85,7 @@ async def create_card(ctx: Context, payload: CreateCardPayload) -> TrelloCard:
         raise
 
 
+@require_write_access
 async def update_card(
     ctx: Context, card_id: str, payload: UpdateCardPayload
 ) -> TrelloCard:
@@ -109,6 +112,7 @@ async def update_card(
         raise
 
 
+@require_write_access
 async def delete_card(ctx: Context, card_id: str) -> dict:
     """Deletes a card.
 
@@ -150,6 +154,7 @@ async def get_card_comments(ctx: Context, card_id: str) -> List[Dict[str, Any]]:
         raise
 
 
+@require_write_access
 async def add_comment_to_card(ctx: Context, card_id: str, text: str) -> Dict[str, Any]:
     """Adds a new comment to a card.
 
@@ -171,6 +176,7 @@ async def add_comment_to_card(ctx: Context, card_id: str, text: str) -> Dict[str
         await ctx.error(error_msg)
         raise
 
+@require_write_access
 async def add_member_to_card(ctx: Context, card_id: str, member_id: str) -> List[Dict[str, Any]]:
     """Adds a member to a card.
 
@@ -193,6 +199,7 @@ async def add_member_to_card(ctx: Context, card_id: str, member_id: str) -> List
         raise
 
 
+@require_write_access
 async def remove_member_from_card(ctx: Context, card_id: str, member_id: str) -> List[Dict[str, Any]]:
     """Removes a member from a card.
 
