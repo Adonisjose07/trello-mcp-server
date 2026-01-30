@@ -15,10 +15,10 @@ api_key_role: ContextVar[Role] = ContextVar("api_key_role")
 def require_write_access(f):
     """Decorator to ensure the current API key has read-write access."""
     @wraps(f)
-    def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):
         role = api_key_role.get(None)
         if role != Role.READ_WRITE:
             logger.warning(f"Unauthorized write attempt to tool: {f.__name__}. Role: {role}")
             raise PermissionError(f"Tool '{f.__name__}' requires read-write access. Your current API key only has {role.value if role else 'no'} access.")
-        return f(*args, **kwargs)
+        return await f(*args, **kwargs)
     return wrapper
