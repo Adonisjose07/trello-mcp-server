@@ -7,7 +7,7 @@ from typing import List
 
 from mcp.server.fastmcp import Context
 
-from server.models import TrelloBoard, TrelloLabel, TrelloMember
+from server.models import TrelloBoard, TrelloLabel, TrelloMember, TrelloWorkspace
 from server.dtos.create_label import CreateLabelPayload
 from server.services.board import BoardService
 from server.trello import client
@@ -39,19 +39,64 @@ async def get_board(ctx: Context, board_id: str) -> TrelloBoard:
         raise
 
 
-async def get_boards(ctx: Context) -> List[TrelloBoard]:
-    """Retrieves all boards for the authenticated user.
+async def get_boards(ctx: Context, filter: str = "open") -> List[TrelloBoard]:
+    """Retrieves all boards for the authenticated user with optional filtering.
+
+    Args:
+        filter (str, optional): Filtering status of the boards. 
+            Options: 'all' (includes invited), 'closed', 'members', 'open' (default), 'organization', 'public', 'starred'.
 
     Returns:
         List[TrelloBoard]: A list of board objects.
     """
     try:
-        logger.info("Getting all boards")
-        result = await service.get_boards()
+        logger.info(f"Getting all boards with filter: {filter}")
+        result = await service.get_boards(filter=filter)
         logger.info(f"Successfully retrieved {len(result)} boards")
         return result
     except Exception as e:
         error_msg = f"Failed to get boards: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+
+async def get_workspaces(ctx: Context) -> List[TrelloWorkspace]:
+    """Retrieves all Trello Workspaces (organizations) that the current user is a member of.
+
+    Returns:
+        List[TrelloWorkspace]: A list of workspace objects containing ID, name, and URL.
+    """
+    try:
+        logger.info("Getting all workspaces")
+        result = await service.get_workspaces()
+        logger.info(f"Successfully retrieved {len(result)} workspaces")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to get workspaces: {str(e)}"
+        logger.error(error_msg)
+        await ctx.error(error_msg)
+        raise
+
+
+async def get_workspace_boards(ctx: Context, workspace_id: str, filter: str = "open") -> List[TrelloBoard]:
+    """Retrieves all boards belonging to a specific Trello Workspace.
+
+    Args:
+        workspace_id (str): The ID of the workspace (organization).
+        filter (str, optional): Filtering status of the boards. 
+            Options: 'all', 'closed', 'members', 'open' (default), 'organization', 'public', 'starred'.
+
+    Returns:
+        List[TrelloBoard]: A list of board objects.
+    """
+    try:
+        logger.info(f"Getting boards for workspace: {workspace_id} with filter: {filter}")
+        result = await service.get_workspace_boards(workspace_id, filter=filter)
+        logger.info(f"Successfully retrieved {len(result)} boards for workspace: {workspace_id}")
+        return result
+    except Exception as e:
+        error_msg = f"Failed to get workspace boards: {str(e)}"
         logger.error(error_msg)
         await ctx.error(error_msg)
         raise

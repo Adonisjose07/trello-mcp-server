@@ -4,7 +4,7 @@ Service for managing Trello boards in MCP server.
 
 from typing import List
 
-from server.models import TrelloBoard, TrelloLabel, TrelloMember
+from server.models import TrelloBoard, TrelloLabel, TrelloMember, TrelloWorkspace
 from server.utils.trello_api import TrelloClient
 
 
@@ -17,27 +17,35 @@ class BoardService:
         self.client = client
 
     async def get_board(self, board_id: str) -> TrelloBoard:
-        """Retrieves a specific board by its ID.
-
-        Args:
-            board_id (str): The ID of the board to retrieve.
-
-        Returns:
-            TrelloBoard: The board object containing board details.
-        """
+        """Retrieves a specific board by its ID."""
         response = await self.client.GET(f"/boards/{board_id}")
         return TrelloBoard(**response)
 
-    async def get_boards(self, member_id: str = "me") -> List[TrelloBoard]:
+    async def get_boards(self, member_id: str = "me", filter: str = "open") -> List[TrelloBoard]:
         """Retrieves all boards for a given member.
-
+        
         Args:
-            member_id (str): The ID of the member whose boards to retrieve. Defaults to "me" for the authenticated user.
-
-        Returns:
-            List[TrelloBoard]: A list of board objects.
+            member_id (str): The ID of the member. Defaults to "me".
+            filter (str): Filter for board status. Can be 'all', 'closed', 'members', 'open', 'organization', 'public', 'starred'.
         """
-        response = await self.client.GET(f"/members/{member_id}/boards")
+        params = {"filter": filter}
+        response = await self.client.GET(f"/members/{member_id}/boards", params=params)
+        return [TrelloBoard(**board) for board in response]
+
+    async def get_workspaces(self) -> List[TrelloWorkspace]:
+        """Retrieves all workspaces (organizations) for the authenticated user."""
+        response = await self.client.GET("/members/me/organizations")
+        return [TrelloWorkspace(**ws) for ws in response]
+
+    async def get_workspace_boards(self, workspace_id: str, filter: str = "open") -> List[TrelloBoard]:
+        """Retrieves all boards within a specific workspace.
+        
+        Args:
+            workspace_id (str): The ID of the workspace.
+            filter (str): Filter for board status.
+        """
+        params = {"filter": filter}
+        response = await self.client.GET(f"/organizations/{workspace_id}/boards", params=params)
         return [TrelloBoard(**board) for board in response]
 
     async def get_board_labels(self, board_id: str) -> List[TrelloLabel]:

@@ -56,3 +56,11 @@ class TrelloMember(BaseModel):
     email: str | None = None
     url: str | None = None
 
+class TrelloWorkspace(BaseModel):
+    """Model representing a Trello workspace (organization)."""
+    id: str
+    name: str # The machine-readable name
+    displayName: str # The human-readable name
+    url: str
+    desc: str | None = None
+
