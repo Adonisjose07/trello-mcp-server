@@ -188,8 +188,8 @@ def start_mcp_server():
 
         app = Starlette(routes=[
             Route("/health", endpoint=health_check),
-            # Explicitly allow POST/GET for /mcp
-            Route("/mcp", endpoint=stream_handler, methods=["POST", "GET"]),
+            # Mount the MCP handler to support sub-paths and robust protocol initialization
+            Mount("/mcp", app=stream_handler),
         ], middleware=middleware, lifespan=lifespan)
 
         logger.info(

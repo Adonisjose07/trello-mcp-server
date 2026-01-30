@@ -832,6 +832,11 @@ class StreamableHTTPServerTransport:
         # Get the session ID from the request headers
         request_session_id = self._get_session_id(request)
 
+        # For the initial GET request to establish a session, the ID is not yet known by the client.
+        # The manager has already created this transport instance for a new session.
+        if not request_session_id and request.method == "GET":
+            return True
+
         # If no session ID provided but required, return error
         if not request_session_id:
             response = self._create_error_response(
